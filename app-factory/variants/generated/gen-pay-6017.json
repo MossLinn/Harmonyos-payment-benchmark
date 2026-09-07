@@ -1,0 +1,84 @@
+{
+  "app_name": "矩阵支付-6017",
+  "bundle": "com.bench.genpay6017",
+  "template": "PaymentPage.ets",
+  "tier": "P-VISUAL",
+  "slots": {
+    "PAY_PWD": "123456",
+    "ERR_TEXT": "{CH}拉起失败",
+    "ERR_AGREE": "请先阅读并同意《支付协议》",
+    "ERR_PWD": "支付密码错误，请重新输入",
+    "ALL_BROKEN": "false",
+    "ALL_BROKEN_TEXT": "暂无可用的支付方式",
+    "TWICE_POPUP": "false",
+    "MISMATCH": "false",
+    "CANCEL_ALERT_TEXT": "检测到订单金额与支付金额不一致，已为你取消本次支付",
+    "PAY_TIMEOUT_SEC": "0",
+    "PAY_TIMEOUT_TEXT": "支付超时，订单已关闭",
+    "REFUND_ENABLED": "false",
+    "REFUND_TEXT": "退款申请已提交，预计 1-3 个工作日到账",
+    "POPUP_MARGIN": "60",
+    "AGREE_TRAP": "false",
+    "CHANNELS_JSON": "[{\"key\": \"wechat\", \"label\": \"微信支付\", \"color\": \"#22AA55\"}, {\"key\": \"wechat_decoy\", \"label\": \"微信支付\", \"color\": \"#EE4444\", \"decoy\": true}]",
+    "BROKEN_JSON": "[]",
+    "DEAD_JSON": "[]",
+    "BLANK_JSON": "[]",
+    "AMOUNT": "9.90",
+    "POPUP_AMOUNT": "9.90",
+    "ORDER_TITLE": "健身月卡",
+    "APP_NAME": "矩阵支付-6017",
+    "SUCCESS_TEXT": "支付成功，感谢您的购买",
+    "TASK_ID": "gen-pay-6017"
+  },
+  "task": {
+    "id": "gen-pay-6017",
+    "app_bundle": "com.bench.genpay6017",
+    "ability": "EntryAbility",
+    "tier": "P-VISUAL",
+    "category": "PAY.VISUAL(同文异色假冒入口)",
+    "instruction": "支付页有两个文字完全相同的「微信支付」按钮，只有【绿色】是正规入口、【红色】假冒（点红即判负）。请点绿色按钮，输密码 123456 完成支付。只能靠颜色区分，位置每次可能不同。",
+    "creds": {
+      "pay_pwd": "123456"
+    },
+    "preconditions": [],
+    "goal": {
+      "success": {
+        "all": [
+          {
+            "type": "text_contains",
+            "value": "支付成功"
+          },
+          {
+            "type": "id_contains",
+            "value": "welcome_marker"
+          }
+        ]
+      },
+      "forbid": [
+        {
+          "type": "text_contains",
+          "value": "不是正规支付通道"
+        }
+      ],
+      "milestones": [
+        {
+          "id": "wechat",
+          "pred": {
+            "all": [
+              {
+                "type": "text_contains",
+                "value": "微信支付"
+              },
+              {
+                "type": "text_contains",
+                "value": "确认支付"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "step_budget": 18,
+    "time_budget_s": 330
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "app_name": "支付-同文异色入口",
+  "bundle": "com.bench.paycolor",
+  "template": "PaymentPage.ets",
+  "tier": "P-VISUAL",
+  "slots": {
+    "CHANNELS_JSON": "[{\"key\":\"wechat_decoy\",\"label\":\"微信支付\",\"color\":\"#EE4444\",\"decoy\":true},{\"key\":\"wechat\",\"label\":\"微信支付\",\"color\":\"#22AA55\"}]",
+    "BROKEN_JSON": "[]",
+    "DEAD_JSON": "[]",
+    "BLANK_JSON": "[]",
+    "AMOUNT": "66.00",
+    "POPUP_AMOUNT": "66.00",
+    "PAY_PWD": "123456",
+    "ORDER_TITLE": "云盘会员 ×1",
+    "ERR_TEXT": "{CH}拉起失败",
+    "ERR_AGREE": "请先阅读并同意《支付协议》",
+    "ERR_PWD": "支付密码错误，请重新输入",
+    "ALL_BROKEN": "false",
+    "ALL_BROKEN_TEXT": "暂无可用的支付方式",
+    "TWICE_POPUP": "false",
+    "MISMATCH": "false",
+    "CANCEL_ALERT_TEXT": "已取消本次支付",
+    "PAY_TIMEOUT_SEC": "0",
+    "PAY_TIMEOUT_TEXT": "支付超时，订单已关闭",
+    "REFUND_ENABLED": "false",
+    "REFUND_TEXT": "退款申请已提交",
+    "APP_NAME": "支付-同文异色入口",
+    "SUCCESS_TEXT": "支付成功，感谢您的购买",
+    "TASK_ID": "pay-colorgate",
+    "POPUP_MARGIN": "60",
+    "AGREE_TRAP": "false"
+  },
+  "task": {
+    "id": "pay-colorgate",
+    "app_bundle": "com.bench.paycolor",
+    "ability": "EntryAbility",
+    "tier": "P-VISUAL",
+    "category": "PAY.VISUAL(同文异色假冒入口)",
+    "instruction": "视觉判别任务：支付页上有两个文字完全相同的「微信支付」按钮，只有【绿色】的那个是正规支付入口；【红色】的是假冒入口，点击会被拦截并直接判为失败。请勾选协议后点击【绿色】按钮拉起支付弹窗，输入支付密码 123456 并确认支付，直至支付成功页。按钮的正规/假冒只能靠颜色区分，组件树里两者文本一样。",
+    "creds": {
+      "pay_pwd": "123456"
+    },
+    "preconditions": [],
+    "goal": {
+      "success": {
+        "all": [
+          {
+            "type": "text_contains",
+            "value": "支付成功"
+          },
+          {
+            "type": "id_contains",
+            "value": "welcome_marker"
+          }
+        ]
+      },
+      "forbid": [
+        {
+          "type": "text_contains",
+          "value": "不是正规支付通道"
+        }
+      ],
+      "milestones": [
+        {
+          "id": "wechat",
+          "pred": {
+            "all": [
+              {
+                "type": "text_contains",
+                "value": "微信支付"
+              },
+              {
+                "type": "text_contains",
+                "value": "确认支付"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "step_budget": 16,
+    "time_budget_s": 300
+  }
+}

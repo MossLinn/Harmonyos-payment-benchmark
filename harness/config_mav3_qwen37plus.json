@@ -1,0 +1,31 @@
+{
+  "device": {
+    "hdc": "auto",
+    "sn": "127.0.0.1:5555",
+    "wait_after_action_ms": 300,
+    "wake_attempt": true
+  },
+  "model": {
+    "base_url": "https://st8tp3ajl0df3n8b8l8qu.apigateway-cn-beijing.volceapi.com/v1",
+    "api_key_env": "VOLC_API_KEY",
+    "model": "qwen3.7-plus",
+    "vision": true,
+    "temperature": 0.0,
+    "max_tokens": 2048
+  },
+  "agent": {
+    "max_steps": 25
+  },
+  "budgets": {
+    "step_timeout_s": 240,
+    "task_timeout_s": 1800
+  },
+  "judge": {
+    "vlm_fallback": false
+  },
+  "token_price": {
+    "in_per_million": 1.0,
+    "out_per_million": 3.0
+  },
+  "_note": "MA-v3 横评：coor_type=qwen-vl image_max_side=768"
+}

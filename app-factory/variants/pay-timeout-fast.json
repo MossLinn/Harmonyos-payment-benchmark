@@ -1,0 +1,84 @@
+{
+  "app_name": "支付-限时完成",
+  "bundle": "com.bench.payfast",
+  "template": "PaymentPage.ets",
+  "tier": "P-NORMAL",
+  "slots": {
+    "CHANNELS_JSON": "[{\"key\":\"alipay\",\"label\":\"支付宝\"}]",
+    "BROKEN_JSON": "[]",
+    "DEAD_JSON": "[]",
+    "BLANK_JSON": "[]",
+    "AMOUNT": "39.90",
+    "POPUP_AMOUNT": "39.90",
+    "PAY_PWD": "123456",
+    "ORDER_TITLE": "咖啡券 ×2",
+    "ERR_TEXT": "{CH}拉起失败",
+    "ERR_AGREE": "请先阅读并同意《支付协议》",
+    "ERR_PWD": "支付密码错误，请重新输入",
+    "ALL_BROKEN": "false",
+    "ALL_BROKEN_TEXT": "暂无可用的支付方式",
+    "TWICE_POPUP": "false",
+    "MISMATCH": "false",
+    "CANCEL_ALERT_TEXT": "已取消本次支付",
+    "PAY_TIMEOUT_SEC": "45",
+    "PAY_TIMEOUT_TEXT": "支付超时，订单已关闭",
+    "REFUND_ENABLED": "false",
+    "REFUND_TEXT": "退款申请已提交",
+    "APP_NAME": "支付-限时完成",
+    "SUCCESS_TEXT": "支付成功，感谢您的购买",
+    "TASK_ID": "pay-timeout-fast",
+    "POPUP_MARGIN": "60",
+    "AGREE_TRAP": "false"
+  },
+  "task": {
+    "id": "pay-timeout-fast",
+    "app_bundle": "com.bench.payfast",
+    "ability": "EntryAbility",
+    "tier": "P-NORMAL",
+    "category": "PAY.NORMAL(限时 45s 内完成)",
+    "instruction": "时效任务：拉起支付宝弹窗后有 45 秒支付倒计时（弹窗内显示剩余支付时间）。请在倒计时结束前勾选协议、输入支付密码 123456 并确认支付，超时则订单关闭、任务失败。",
+    "creds": {
+      "pay_pwd": "123456"
+    },
+    "preconditions": [],
+    "goal": {
+      "success": {
+        "all": [
+          {
+            "type": "text_contains",
+            "value": "支付成功"
+          },
+          {
+            "type": "id_contains",
+            "value": "welcome_marker"
+          }
+        ]
+      },
+      "forbid": [
+        {
+          "type": "id_contains",
+          "value": "timeout_marker"
+        }
+      ],
+      "milestones": [
+        {
+          "id": "alipay",
+          "pred": {
+            "all": [
+              {
+                "type": "text_contains",
+                "value": "支付宝"
+              },
+              {
+                "type": "text_contains",
+                "value": "确认支付"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "step_budget": 18,
+    "time_budget_s": 240
+  }
+}

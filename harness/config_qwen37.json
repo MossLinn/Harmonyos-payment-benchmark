@@ -1,0 +1,15 @@
+{
+  "device": {"hdc": "auto", "sn": "", "wait_after_action_ms": 300, "wake_attempt": true},
+  "model": {
+    "base_url": "https://st8tp3ajl0df3n8b8l8qu.apigateway-cn-beijing.volceapi.com/v1",
+    "api_key_env": "VOLC_API_KEY",
+    "model": "qwen3.7-max",
+    "vision": false,
+    "temperature": 0.2,
+    "max_tokens": 1024
+  },
+  "agent": {"max_steps": 25, "tree_max_nodes": 80, "tree_max_text_len": 6000, "keep_image_turns": 1},
+  "budgets": {"step_timeout_s": 120, "task_timeout_s": 900},
+  "judge": {"vlm_fallback": false},
+  "token_price": {"in_per_million": 1.0, "out_per_million": 3.0}
+}

@@ -1,0 +1,21 @@
+{
+  "gateway": {
+    "base_url": "https://st8tp3ajl0df3n8b8l8qu.apigateway-cn-beijing.volceapi.com/v1",
+    "api_key_env": "VOLC_API_KEY"
+  },
+  "models": {
+    "doubao-seed-2.1-pro": {"multimodal": true, "coor_type": "qwen-vl", "image_max_side": 768, "note": "相对坐标，离真值3px"},
+    "qwen3.8-max": {"multimodal": true, "coor_type": "qwen-vl", "image_max_side": 768, "note": "相对坐标，0误差"},
+    "qwen3.8-flash": {"multimodal": true, "coor_type": "qwen-vl", "image_max_side": 768, "note": "相对坐标"},
+    "qwen3.7-plus": {"multimodal": true, "coor_type": "qwen-vl", "image_max_side": 768, "note": "标定漂移，非干净abs/rel"},
+    "MiniMax-M3": {"multimodal": true, "coor_type": "qwen-vl", "image_max_side": 768, "note": "标定漂移"},
+    "hy3": {"multimodal": true, "coor_type": "qwen-vl", "image_max_side": 768, "note": "定位弱"},
+    "glm-5.3-flash": {"multimodal": true, "coor_type": "abs", "image_max_side": 0, "note": "绝对像素坐标，需全分辨率"},
+    "kimi-k2.7-code": {"multimodal": true, "coor_type": "abs", "image_max_side": 0, "note": "绝对像素坐标，需全分辨率"},
+    "deepseek-v4-pro": {"multimodal": false, "note": "纯文本，不支持图片"},
+    "deepseek-v4-flash": {"multimodal": false, "note": "纯文本，不支持图片"},
+    "glm-5.2": {"multimodal": false, "note": "纯文本，不支持图片"},
+    "glm-5.3": {"multimodal": false, "note": "纯文本，不支持图片"},
+    "qwen3.7-max": {"multimodal": false, "note": "纯文本，不支持图片"}
+  }
+}

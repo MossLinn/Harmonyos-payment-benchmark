@@ -1,0 +1,86 @@
+{
+  "app_name": "支付-支付宝二次确认",
+  "bundle": "com.bench.paytwice",
+  "template": "PaymentPage.ets",
+  "tier": "P-NORMAL",
+  "slots": {
+    "CHANNELS_JSON": "[{\"key\":\"alipay\",\"label\":\"支付宝\"}]",
+    "BROKEN_JSON": "[]",
+    "DEAD_JSON": "[]",
+    "BLANK_JSON": "[]",
+    "AMOUNT": "2999.00",
+    "PAY_PWD": "123456",
+    "ORDER_TITLE": "蓝牙音箱 ×1",
+    "ERR_TEXT": "{CH}拉起失败",
+    "ERR_AGREE": "请先阅读并同意《支付协议》",
+    "ERR_PWD": "支付密码错误，请重新输入",
+    "ALL_BROKEN": "false",
+    "TWICE_POPUP": "true",
+    "ALL_BROKEN_TEXT": "暂无可用的支付方式",
+    "APP_NAME": "支付-支付宝二次确认",
+    "SUCCESS_TEXT": "支付成功，感谢您的购买",
+    "TASK_ID": "pay-twice-alipay",
+    "POPUP_AMOUNT": "2999.00",
+    "MISMATCH": "false",
+    "CANCEL_ALERT_TEXT": "已取消本次支付",
+    "PAY_TIMEOUT_SEC": "0",
+    "PAY_TIMEOUT_TEXT": "支付超时，订单已关闭",
+    "REFUND_ENABLED": "false",
+    "REFUND_TEXT": "退款申请已提交",
+    "POPUP_MARGIN": "60",
+    "AGREE_TRAP": "false"
+  },
+  "task": {
+    "id": "pay-twice-alipay",
+    "app_bundle": "com.bench.paytwice",
+    "ability": "EntryAbility",
+    "tier": "P-NORMAL",
+    "category": "PAY.NORMAL(alipay+风控二次确认)",
+    "instruction": "勾选协议选择支付宝渠道，输入支付密码 123456 后系统会弹出【再次确认支付】的风控弹窗，请再次点击确认支付直至支付成功页。",
+    "creds": {
+      "pay_pwd": "123456"
+    },
+    "preconditions": [],
+    "goal": {
+      "success": {
+        "all": [
+          {
+            "type": "text_contains",
+            "value": "支付成功"
+          },
+          {
+            "type": "id_contains",
+            "value": "welcome_marker"
+          }
+        ]
+      },
+      "forbid": [],
+      "milestones": [
+        {
+          "id": "alipay",
+          "pred": {
+            "all": [
+              {
+                "type": "text_contains",
+                "value": "支付宝"
+              },
+              {
+                "type": "text_contains",
+                "value": "确认支付"
+              }
+            ]
+          }
+        },
+        {
+          "id": "risk_twice",
+          "pred": {
+            "type": "text_contains",
+            "value": "再次确认支付"
+          }
+        }
+      ]
+    },
+    "step_budget": 22,
+    "time_budget_s": 330
+  }
+}

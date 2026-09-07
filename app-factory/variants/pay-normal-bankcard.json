@@ -1,0 +1,79 @@
+{
+  "app_name": "支付-银行卡渠道",
+  "bundle": "com.bench.paybank",
+  "template": "PaymentPage.ets",
+  "tier": "P-NORMAL",
+  "slots": {
+    "CHANNELS_JSON": "[{\"key\":\"bankcard\",\"label\":\"银行卡支付\"}]",
+    "BROKEN_JSON": "[]",
+    "AMOUNT": "3599.00",
+    "PAY_PWD": "123456",
+    "ORDER_TITLE": "智能手表 ×1",
+    "ERR_TEXT": "{CH}拉起失败",
+    "ERR_AGREE": "请先阅读并同意《支付协议》",
+    "ERR_PWD": "支付密码错误，请重新输入",
+    "ALL_BROKEN": "false",
+    "ALL_BROKEN_TEXT": "暂无可用的支付方式",
+    "APP_NAME": "支付-银行卡渠道",
+    "SUCCESS_TEXT": "支付成功，感谢您的购买",
+    "TASK_ID": "pay-normal-bankcard",
+    "DEAD_JSON": "[]",
+    "BLANK_JSON": "[]",
+    "TWICE_POPUP": "false",
+    "POPUP_AMOUNT": "3599.00",
+    "MISMATCH": "false",
+    "CANCEL_ALERT_TEXT": "已取消本次支付",
+    "PAY_TIMEOUT_SEC": "0",
+    "PAY_TIMEOUT_TEXT": "支付超时，订单已关闭",
+    "REFUND_ENABLED": "false",
+    "REFUND_TEXT": "退款申请已提交",
+    "POPUP_MARGIN": "60",
+    "AGREE_TRAP": "false"
+  },
+  "task": {
+    "id": "pay-normal-bankcard",
+    "app_bundle": "com.bench.paybank",
+    "ability": "EntryAbility",
+    "tier": "P-NORMAL",
+    "category": "PAY.NORMAL(bankcard)",
+    "instruction": "勾选《支付协议》后选择银行卡支付渠道，待银行卡支付弹窗拉起，输入支付密码 123456 并确认支付，直至支付成功页。",
+    "creds": {
+      "pay_pwd": "123456"
+    },
+    "preconditions": [],
+    "goal": {
+      "success": {
+        "all": [
+          {
+            "type": "text_contains",
+            "value": "支付成功"
+          },
+          {
+            "type": "id_contains",
+            "value": "welcome_marker"
+          }
+        ]
+      },
+      "forbid": [],
+      "milestones": [
+        {
+          "id": "bankcard",
+          "pred": {
+            "all": [
+              {
+                "type": "text_contains",
+                "value": "银行卡支付"
+              },
+              {
+                "type": "text_contains",
+                "value": "确认支付"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "step_budget": 20,
+    "time_budget_s": 300
+  }
+}

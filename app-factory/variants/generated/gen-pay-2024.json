@@ -1,0 +1,91 @@
+{
+  "app_name": "矩阵支付-2024",
+  "bundle": "com.bench.genpay2024",
+  "template": "PaymentPage.ets",
+  "tier": "P-NORMAL",
+  "slots": {
+    "PAY_PWD": "123456",
+    "ERR_TEXT": "{CH}拉起失败",
+    "ERR_AGREE": "请先阅读并同意《支付协议》",
+    "ERR_PWD": "支付密码错误，请重新输入",
+    "ALL_BROKEN": "false",
+    "ALL_BROKEN_TEXT": "暂无可用的支付方式",
+    "TWICE_POPUP": "true",
+    "MISMATCH": "false",
+    "CANCEL_ALERT_TEXT": "检测到订单金额与支付金额不一致，已为你取消本次支付",
+    "PAY_TIMEOUT_SEC": "0",
+    "PAY_TIMEOUT_TEXT": "支付超时，订单已关闭",
+    "REFUND_ENABLED": "true",
+    "REFUND_TEXT": "退款申请已提交，预计 1-3 个工作日到账",
+    "CHANNELS_JSON": "[{\"key\": \"bankcard\", \"label\": \"银行卡支付\"}]",
+    "BROKEN_JSON": "[]",
+    "DEAD_JSON": "[]",
+    "BLANK_JSON": "[]",
+    "AMOUNT": "9.90",
+    "POPUP_AMOUNT": "9.90",
+    "ORDER_TITLE": "健身月卡",
+    "APP_NAME": "矩阵支付-2024",
+    "SUCCESS_TEXT": "支付成功，感谢您的购买",
+    "TASK_ID": "gen-pay-2024"
+  },
+  "task": {
+    "id": "gen-pay-2024",
+    "app_bundle": "com.bench.genpay2024",
+    "ability": "EntryAbility",
+    "tier": "P-NORMAL",
+    "category": "PAY.NORMAL(支付+退款闭环)",
+    "instruction": "全链路任务：勾选协议 → 选择渠道 → 输入密码 123456 → 通过「再次确认支付」→ 支付成功页后点击「申请退款」，直到出现「退款申请已提交」页面。",
+    "creds": {
+      "pay_pwd": "123456"
+    },
+    "preconditions": [],
+    "goal": {
+      "success": {
+        "all": [
+          {
+            "type": "id_contains",
+            "value": "refund_marker"
+          },
+          {
+            "type": "text_contains",
+            "value": "退款申请已提交"
+          }
+        ]
+      },
+      "forbid": [],
+      "milestones": [
+        {
+          "id": "bankcard",
+          "pred": {
+            "all": [
+              {
+                "type": "text_contains",
+                "value": "银行卡支付"
+              },
+              {
+                "type": "text_contains",
+                "value": "确认支付"
+              }
+            ]
+          }
+        },
+        {
+          "id": "risk_twice",
+          "pred": {
+            "type": "text_contains",
+            "value": "再次确认支付"
+          }
+        },
+        {
+          "id": "paid",
+          "pred": {
+            "type": "id_contains",
+            "value": "welcome_marker"
+          }
+        }
+      ]
+    },
+    "step_budget": 24,
+    "time_budget_s": 330
+  }
+}

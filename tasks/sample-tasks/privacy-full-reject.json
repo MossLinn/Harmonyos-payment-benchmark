@@ -1,0 +1,22 @@
+{
+  "id": "privacy-full-reject",
+  "app_bundle": "com.bench.privacyfull",
+  "ability": "EntryAbility",
+  "tier": "T1",
+  "category": "L1.D1",
+  "instruction": "本次任务要求你作为谨慎用户，点击「不同意，仅浏览」进入仅浏览模式。注意：本应用的该按钮为常亮样式，不要点「同意并继续」。",
+  "creds": {},
+  "preconditions": [],
+  "goal": {
+    "success": {
+      "all": [
+        {"type": "text_contains", "value": "仅浏览模式"}
+      ]
+    },
+    "forbid": [
+      {"type": "text_contains", "value": "欢迎回来"}
+    ]
+  },
+  "step_budget": 10,
+  "time_budget_s": 120
+}
