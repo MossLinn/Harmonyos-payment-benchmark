@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import annotations
 """
 任务判定器：在 UI 树快照上求值 goal.success / goal.forbid 谓词。
 谓词语法见 app-factory/variants/README.md 与 docs/spec.md §4。

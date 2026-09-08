@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import annotations
 """
 离线模拟器：把三个 ArkTS 模板的状态机在 Python 里精确镜像，供 harness 在
 **无鸿蒙设备**时端到端运行（Agent 决策 → 执行 → 判定 → 计分全链路），

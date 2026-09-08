@@ -18,3 +18,7 @@ venv/
 .vscode/
 Thumbs.db
 .DS_Store
+
+# 本机校准暂存/设备定向配置（shangjia mbp）
+apps-calib/
+harness/config_hdc*.json

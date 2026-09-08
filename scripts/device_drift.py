@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import annotations
 """
 真机↔模拟器 漂移分析：对比 device_* 与 baseline_for_device 的逐任务结果。
 

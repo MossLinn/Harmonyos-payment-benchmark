@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import annotations
 """
 鸿蒙设备驱动：hdc + uitest 封装。
 
@@ -22,17 +23,24 @@ def _find_hdc() -> str | None:
     hit = shutil.which("hdc")
     if hit:
         return hit
+    # macOS：DEVECO_SDK_HOME=<DevEco>/Contents/sdk → default/openharmony/toolchains/hdc（无 .exe）
+    if os.environ.get("DEVECO_SDK_HOME"):
+        mac_hdc = (Path(os.environ["DEVECO_SDK_HOME"]) / "default" / "openharmony"
+                   / "toolchains" / "hdc")
+        if mac_hdc.exists():
+            return str(mac_hdc)
     roots = [Path("C:/Program Files/Huawei"), Path("D:/Program Files/Huawei"),
              Path("G:/360downloads/DevEco Studio"), Path("G:/DevEco Studio"),
-             Path("C:/360downloads/DevEco Studio")]
+             Path("C:/360downloads/DevEco Studio"),
+             Path("/Applications/DevEco-Studio.app/Contents")]  # macOS DevEco 标准安装位
     env_home = os.environ.get("DEVECO_HOME") or os.environ.get("DEVECO_SDK_HOME")
     if env_home:
         roots.insert(0, Path(env_home).parent if os.environ.get("DEVECO_SDK_HOME") else Path(env_home))
     for root in roots:
         if root.exists():
-            hits = list(root.glob("**/openharmony/toolchains/hdc.exe"))
+            hits = list(root.glob("**/openharmony/toolchains/hdc*"))
             if hits:
-                return str(sorted(hits)[-1])
+                return str(sorted(hits)[0])
     return None
 
 
@@ -75,13 +83,28 @@ class HOSDevice:
     def force_stop(self, bundle: str) -> None:
         self._run(["shell", "aa", "force-stop", bundle])
 
+    def ensure_foreground(self, bundle: str, ability: str = "EntryAbility", settle_s: float = 5.0) -> None:
+        """本机校准：锁屏会吞掉 -b 过滤的组件树（返回空节点）。
+        唤醒 + 上滑解除锁屏 + 再次拉起（aa start 幂等），并留冷启动 settle。"""
+        self.wake()
+        try:
+            self.swipe(630, 2300, 630, 700)  # 上滑解除锁屏（未锁屏时无害）
+        except Exception:
+            pass
+        self.wait(1.0)
+        try:
+            self.start(bundle, ability)
+        except Exception:
+            pass
+        self.wait(settle_s)
+
     def wake(self) -> None:
-        # 已按 hdc 3.2.0f 实测校准：uiInput keyEvent Power
-        for cmd in (["shell", "uitest", "uiInput", "keyEvent", "Power"],
+        # macOS 模拟器校准（hdc 3.2.0b）：不用 Power 键——屏幕已亮时 Power 会反向熄屏；
+        # setmode 602 保持常亮 + power-shell wakeup 均幂等。
+        for cmd in (["shell", "power-shell", "setmode", "602"],
                     ["shell", "power-shell", "wakeup"]):
             try:
                 self._run(cmd, timeout_s=10)
-                return
             except Exception:
                 continue
 

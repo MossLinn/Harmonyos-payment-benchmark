@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import annotations
 """
 基线 Agent：规则基线（校准用）与随机基线（下界）。
 

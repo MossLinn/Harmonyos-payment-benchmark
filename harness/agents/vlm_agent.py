@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import annotations
 """
 VLM Agent：OpenAI 兼容网关客户端 + 决策循环体。
 

@@ -1,3 +1,4 @@
+from __future__ import annotations
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -221,15 +222,19 @@ def find_hvigorw() -> str | None:
     cands = []
     env = os.environ.get("DEVECO_SDK_HOME")
     if env:
+        # 非 Windows 优先无后缀可执行版（.bat 存在但不可执行）
+        cands.append(Path(env).parent / "tools" / "hvigor" / "bin" / "hvigorw")
         cands.append(Path(env).parent / "tools" / "hvigor" / "bin" / "hvigorw.bat")
     home = os.environ.get("DEVECO_HOME")
     if home:
+        cands.append(Path(home) / "tools" / "hvigor" / "bin" / "hvigorw")
         cands.append(Path(home) / "tools" / "hvigor" / "bin" / "hvigorw.bat")
     for pf in ["C:/Program Files/Huawei", "D:/Program Files/Huawei",
                "G:/360downloads/DevEco Studio", "C:/360downloads/DevEco Studio",
-               "G:/DevEco Studio"]:
+               "G:/DevEco Studio", "/Applications/DevEco-Studio.app/Contents"]:
         root = Path(pf)
         if root.exists():
+            cands.append(root / "tools" / "hvigor" / "bin" / "hvigorw")
             cands.append(root / "tools" / "hvigor" / "bin" / "hvigorw.bat")
             cands.extend(root.glob("DevEco Studio*/tools/hvigor/bin/hvigorw.bat"))
     for c in cands:
@@ -242,12 +247,22 @@ def find_hdc() -> str | None:
     sh = shutil.which("hdc")
     if sh:
         return sh
+    # macOS：SDK 内 hdc（无 .exe 后缀）
+    if os.environ.get("DEVECO_SDK_HOME"):
+        c = Path(os.environ["DEVECO_SDK_HOME"]) / "default" / "openharmony" / "toolchains" / "hdc"
+        if c.exists():
+            return str(c)
     for pf in ["C:/Program Files/Huawei", "D:/Program Files/Huawei"]:
         root = Path(pf)
         if root.exists():
             hits = list(root.glob("DevEco Studio*/sdk/**/toolchains/hdc.exe"))
             if hits:
                 return str(hits[0])
+    mac_sdk = Path("/Applications/DevEco-Studio.app/Contents/sdk")
+    if mac_sdk.exists():
+        hits = list(mac_sdk.glob("*/openharmony/toolchains/hdc"))
+        if hits:
+            return str(hits[0])
     return None
 
 
@@ -282,7 +297,8 @@ def main() -> None:
         if isinstance(content, bytes):
             p.write_bytes(content)
         else:
-            p.write_text(content, encoding="utf-8", newline="\n")
+            with open(p, "w", encoding="utf-8", newline="\n") as fh:
+                fh.write(content)
 
     (project_dir / "task.json").write_text(json.dumps(task, ensure_ascii=False, indent=2), encoding="utf-8")
     (project_dir / "variant.json").write_text(json.dumps(variant, ensure_ascii=False, indent=2), encoding="utf-8")

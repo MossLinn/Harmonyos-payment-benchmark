@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import annotations
 """
 任务运行器：加载任务 → 装包拉起 → Agent 循环 → 判定 → 轨迹与 token 记账。
 
@@ -247,8 +248,11 @@ def run_task(task_path: Path, app_dir: Path | None, agent_kind: str, cfg: dict, 
                 device.install(hap)
     device.force_stop(task["app_bundle"])
     time.sleep(0.5)
-    device.start(task["app_bundle"], task.get("ability", "EntryAbility"))
-    time.sleep(5.0)
+    if backend == "hdc" and hasattr(device, "ensure_foreground"):
+        device.ensure_foreground(task["app_bundle"], task.get("ability", "EntryAbility"), settle_s=5.0)
+    else:
+        device.start(task["app_bundle"], task.get("ability", "EntryAbility"))
+        time.sleep(5.0)
 
     agent, client = build_agent(agent_kind, task, cfg, seed)
     judge = Judge(task)
@@ -269,6 +273,8 @@ def run_task(task_path: Path, app_dir: Path | None, agent_kind: str, cfg: dict, 
     last_action = None
     last_log = ""
     milestone_seen: set = set()
+    empty_streak = 0
+    recoveries = 0
 
     with open(trace_path, "w", encoding="utf-8") as tf:
         for step in range(1, max_steps + 1):
@@ -282,6 +288,26 @@ def run_task(task_path: Path, app_dir: Path | None, agent_kind: str, cfg: dict, 
             except Exception as e:
                 result["fail_reason"] = f"device_error: {e}"
                 break
+            # 本机校准：锁屏/熄屏会让 -b 过滤树变空。空树连续 2 步则唤醒+解屏+重拉（≤2 次），无效判设备错。
+            if backend == "hdc" and hasattr(device, "ensure_foreground"):
+                real = [n for n in nodes if (n.get("type") or n.get("text") or n.get("id"))]
+                if not real:
+                    empty_streak += 1
+                    if empty_streak >= 2:
+                        if recoveries < 2:
+                            recoveries += 1
+                            empty_streak = 0
+                            print(f"[{tid}] 空组件树，恢复 {recoveries}/2：唤醒+解屏+重拉")
+                            try:
+                                device.ensure_foreground(task["app_bundle"],
+                                                         task.get("ability", "EntryAbility"), settle_s=4.0)
+                            except Exception as e:
+                                print(f"[{tid}] 恢复失败: {e}")
+                            continue
+                        result["fail_reason"] = "device_error: dump_tree 持续为空"
+                        break
+                else:
+                    empty_streak = 0
 
             shot_path = None
             shot_black = False
