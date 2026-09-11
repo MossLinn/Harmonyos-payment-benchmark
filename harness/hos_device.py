@@ -75,6 +75,9 @@ class HOSDevice:
         if r.returncode != 0 or "error" in r.stdout.lower():
             raise RuntimeError(f"hdc install 失败: {r.stdout[-500:]}")
 
+    def uninstall(self, bundle: str) -> None:
+        self._run(["uninstall", bundle], timeout_s=60)
+
     def start(self, bundle: str, ability: str = "EntryAbility") -> None:
         r = self._run(["shell", "aa", "start", "-a", ability, "-b", bundle])
         if r.returncode != 0:

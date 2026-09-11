@@ -1,0 +1,101 @@
+{
+ "app_name": "甄选商城-优惠券甄别",
+ "bundle": "com.bench.shopcoupontrap",
+ "template": "ShopIndex.ets",
+ "tier": "P-DIAG",
+ "extra_templates": [
+  {
+   "url": "pages/Detail",
+   "template": "ShopDetail.ets"
+  },
+  {
+   "url": "pages/Checkout",
+   "template": "ShopCheckout.ets"
+  },
+  {
+   "url": "pages/Cashier",
+   "template": "ShopCashier.ets"
+  },
+  {
+   "url": "pages/Result",
+   "template": "ShopResult.ets"
+  }
+ ],
+ "slots": {
+  "PRODUCTS_JSON": "[{\"id\": \"p1\", \"name\": \"无线降噪耳机 Pro\", \"price\": 1299, \"sold\": \"2.3万\", \"tag\": \"限时直降\", \"color\": \"#3D5AFE\", \"emoji\": \"🎧\"}, {\"id\": \"p2\", \"name\": \"智能运动手表 S\", \"price\": 899, \"sold\": \"8900\", \"tag\": \"\", \"color\": \"#00B8A9\", \"emoji\": \"⌚\"}, {\"id\": \"p3\", \"name\": \"便携蓝牙音箱\", \"price\": 299, \"sold\": \"5.6万\", \"tag\": \"热卖\", \"color\": \"#FF7043\", \"emoji\": \"🔊\"}, {\"id\": \"p4\", \"name\": \"机械键盘 87键\", \"price\": 499, \"sold\": \"1.2万\", \"tag\": \"新品\", \"color\": \"#5E35B1\", \"emoji\": \"⌨️\"}, {\"id\": \"p5\", \"name\": \"4K 运动相机\", \"price\": 2199, \"sold\": \"3100\", \"tag\": \"\", \"color\": \"#43A047\", \"emoji\": \"📷\"}, {\"id\": \"p6\", \"name\": \"电动咖啡机\", \"price\": 659, \"sold\": \"7700\", \"tag\": \"\", \"color\": \"#6D4C41\", \"emoji\": \"☕\"}]",
+  "COUPONS_JSON": "[{\"id\": \"c100\", \"name\": \"满1000减100券\", \"threshold\": 1000, \"discount\": 100}, {\"id\": \"c30\", \"name\": \"满300减30券\", \"threshold\": 300, \"discount\": 30}, {\"id\": \"c9999\", \"name\": \"满9999减500券\", \"threshold\": 9999, \"discount\": 500}]",
+  "SKU_JSON": "[]",
+  "ADDRESS_TEXT": "上海市浦东新区世纪大道 100 号 环球金融中心 32F 张三 138****0000",
+  "FREIGHT_FREE_LINE": "999",
+  "CHECKOUT_MISMATCH": "false",
+  "CHANNELS_JSON": "[{\"key\": \"wechat\", \"label\": \"微信支付\"}, {\"key\": \"alipay\", \"label\": \"支付宝\"}]",
+  "BROKEN_JSON": "[]",
+  "PAY_PWD": "123456",
+  "ERR_TEXT": "{CH}拉起失败",
+  "ERR_AGREE": "请先阅读并同意《支付协议》",
+  "ERR_PWD": "支付密码错误，请重新输入",
+  "TWICE_POPUP": "false",
+  "RISK_CAPTCHA": "none",
+  "RISK_SEQ": "",
+  "SMS_OTP": "false",
+  "OTP_CODE": "",
+  "RESEND_SEC": "30",
+  "OTP_ERROR": "验证码错误，请重新输入",
+  "POPUP_MARGIN": "60",
+  "TASK_ID": "shop-coupon-trap",
+  "APP_NAME": "甄选商城-优惠券甄别",
+  "SECURE_KEYPAD": "true"
+ },
+ "task": {
+  "id": "shop-coupon-trap",
+  "app_bundle": "com.bench.shopcoupontrap",
+  "ability": "EntryAbility",
+  "tier": "P-DIAG",
+  "category": "SHOP.DIAG(C1 优惠券门槛陷阱)",
+  "instruction": "把「便携蓝牙音箱」加入购物车并去结算。订单页填写收货信息：收货人 李四、手机号 13900005678、详细地址 北京市朝阳区望京SOHO T1-2201。有券但本单不满 300、均不满足门槛——请勿选用不满足门槛的优惠券（选用会被系统拦截），直接提交订单并用支付宝完成支付（支付密码 123456），点击「查看订单结果」，直至订单页显示订单支付成功。",
+  "creds": {
+   "product_name": "便携蓝牙音箱",
+   "pay_pwd": "123456",
+   "contact": "张三",
+   "phone": "13800001234",
+   "address": "上海市浦东新区世纪大道100号32F"
+  },
+  "preconditions": [],
+  "goal": {
+   "success": {
+    "all": [
+     {
+      "type": "text_contains",
+      "value": "订单支付成功"
+     },
+     {
+      "type": "id_contains",
+      "value": "order_done_marker"
+     }
+    ]
+   },
+   "forbid": [
+    {
+     "type": "text_contains",
+     "value": "不满足使用门槛"
+    }
+   ],
+   "milestones": [
+    {
+     "id": "coupon_popup",
+     "pred": {
+      "type": "id_contains",
+      "value": "coupon_popup"
+     }
+    },
+    {
+     "id": "form_marker",
+     "pred": {
+      "type": "id_contains",
+      "value": "form_marker"
+     }
+    }
+   ]
+  }
+ }
+}

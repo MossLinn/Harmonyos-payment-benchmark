@@ -1,0 +1,124 @@
+{
+ "app_name": "甄选商城-全流程",
+ "bundle": "com.bench.shopfulljourney",
+ "template": "ShopIndex.ets",
+ "tier": "P-NORMAL",
+ "extra_templates": [
+  {
+   "url": "pages/Detail",
+   "template": "ShopDetail.ets"
+  },
+  {
+   "url": "pages/Checkout",
+   "template": "ShopCheckout.ets"
+  },
+  {
+   "url": "pages/Cashier",
+   "template": "ShopCashier.ets"
+  },
+  {
+   "url": "pages/Result",
+   "template": "ShopResult.ets"
+  }
+ ],
+ "slots": {
+  "PRODUCTS_JSON": "[{\"id\": \"p1\", \"name\": \"无线降噪耳机 Pro\", \"price\": 1299, \"sold\": \"2.3万\", \"tag\": \"限时直降\", \"color\": \"#3D5AFE\", \"emoji\": \"🎧\"}, {\"id\": \"p2\", \"name\": \"智能运动手表 S\", \"price\": 899, \"sold\": \"8900\", \"tag\": \"\", \"color\": \"#00B8A9\", \"emoji\": \"⌚\"}, {\"id\": \"p3\", \"name\": \"便携蓝牙音箱\", \"price\": 299, \"sold\": \"5.6万\", \"tag\": \"热卖\", \"color\": \"#FF7043\", \"emoji\": \"🔊\"}, {\"id\": \"p4\", \"name\": \"机械键盘 87键\", \"price\": 499, \"sold\": \"1.2万\", \"tag\": \"新品\", \"color\": \"#5E35B1\", \"emoji\": \"⌨️\"}, {\"id\": \"p5\", \"name\": \"4K 运动相机\", \"price\": 2199, \"sold\": \"3100\", \"tag\": \"\", \"color\": \"#43A047\", \"emoji\": \"📷\"}, {\"id\": \"p6\", \"name\": \"电动咖啡机\", \"price\": 659, \"sold\": \"7700\", \"tag\": \"\", \"color\": \"#6D4C41\", \"emoji\": \"☕\"}]",
+  "COUPONS_JSON": "[{\"id\": \"c100\", \"name\": \"满1000减100券\", \"threshold\": 1000, \"discount\": 100}, {\"id\": \"c30\", \"name\": \"满300减30券\", \"threshold\": 300, \"discount\": 30}, {\"id\": \"c9999\", \"name\": \"满9999减500券\", \"threshold\": 9999, \"discount\": 500}]",
+  "SKU_JSON": "[{\"name\": \"颜色\", \"options\": [{\"label\": \"曜石黑\", \"priceDelta\": 0}, {\"label\": \"冰川白\", \"priceDelta\": 0}]}, {\"name\": \"版本\", \"options\": [{\"label\": \"标准版\", \"priceDelta\": 0}, {\"label\": \"套装版\", \"priceDelta\": 200}]}, {\"name\": \"保障\", \"options\": [{\"label\": \"无保障\", \"priceDelta\": 0}, {\"label\": \"一年碎屏险\", \"priceDelta\": 99}]}]",
+  "ADDRESS_TEXT": "上海市浦东新区世纪大道 100 号 环球金融中心 32F 张三 138****0000",
+  "FREIGHT_FREE_LINE": "999",
+  "CHECKOUT_MISMATCH": "false",
+  "CHANNELS_JSON": "[{\"key\": \"wechat\", \"label\": \"微信支付\"}, {\"key\": \"alipay\", \"label\": \"支付宝\"}]",
+  "BROKEN_JSON": "[]",
+  "PAY_PWD": "123456",
+  "ERR_TEXT": "{CH}拉起失败",
+  "ERR_AGREE": "请先阅读并同意《支付协议》",
+  "ERR_PWD": "支付密码错误，请重新输入",
+  "TWICE_POPUP": "false",
+  "RISK_CAPTCHA": "digit3",
+  "RISK_SEQ": "3,7,1",
+  "SMS_OTP": "true",
+  "OTP_CODE": "246810",
+  "RESEND_SEC": "30",
+  "OTP_ERROR": "验证码错误，请重新输入",
+  "POPUP_MARGIN": "60",
+  "TASK_ID": "shop-full-journey",
+  "APP_NAME": "甄选商城-全流程",
+  "SECURE_KEYPAD": "true"
+ },
+ "task": {
+  "id": "shop-full-journey",
+  "app_bundle": "com.bench.shopfulljourney",
+  "ability": "EntryAbility",
+  "tier": "P-NORMAL",
+  "category": "SHOP.NORMAL(规格+购物车+表单+优惠券+支付全漏斗)",
+  "instruction": "在首页找到「无线降噪耳机 Pro」进详情：规格选择【颜色-曜石黑】【版本-套装版】【保障-一年碎屏险】，数量 1，加入购物车；到购物车勾选并去结算。订单确认页填写收货信息：收货人 张三、手机号 13800001234、详细地址 上海市浦东新区世纪大道100号32F，勾选需要电子发票并填抬头「个人」；选用「满1000减100券」后提交订单。收银台选支付宝，数字键盘输入支付密码 123456，按顺序点击人机验证数字 3、7、1，输入短信验证码 246810 并确认，查看订单结果直至订单支付成功。",
+  "creds": {
+   "product_name": "无线降噪耳机",
+   "sku": "曜石黑|套装版|一年碎屏险",
+   "contact": "张三",
+   "phone": "13800001234",
+   "address": "上海市浦东新区世纪大道100号32F",
+   "invoice_title": "个人",
+   "coupon_id": "c100",
+   "pay_pwd": "123456",
+   "risk_seq": "371",
+   "sms_otp": "246810"
+  },
+  "preconditions": [],
+  "goal": {
+   "success": {
+    "all": [
+     {
+      "type": "text_contains",
+      "value": "订单支付成功"
+     },
+     {
+      "type": "id_contains",
+      "value": "order_done_marker"
+     }
+    ]
+   },
+   "forbid": [],
+   "milestones": [
+    {
+     "id": "sku_form",
+     "pred": {
+      "type": "id_contains",
+      "value": "sku_group_"
+     }
+    },
+    {
+     "id": "added_to_cart",
+     "pred": {
+      "type": "text_contains",
+      "value": "已加入购物车"
+     }
+    },
+    {
+     "id": "form_marker",
+     "pred": {
+      "type": "id_contains",
+      "value": "form_marker"
+     }
+    },
+    {
+     "id": "coupon_popup",
+     "pred": {
+      "type": "id_contains",
+      "value": "coupon_popup"
+     }
+    },
+    {
+     "id": "order_done",
+     "pred": {
+      "type": "id_contains",
+      "value": "order_done_marker"
+     }
+    }
+   ]
+  },
+  "step_budget": 60,
+  "time_budget_s": 2400
+ }
+}

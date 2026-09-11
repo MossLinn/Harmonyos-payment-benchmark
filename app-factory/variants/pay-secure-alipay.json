@@ -1,0 +1,70 @@
+{
+ "app_name": "支付-安全键盘支付宝",
+ "bundle": "com.bench.securealipay",
+ "template": "PaymentPage.ets",
+ "tier": "P-NORMAL",
+ "slots": {
+  "CHANNELS_JSON": "[{\"key\": \"alipay\", \"label\": \"支付宝\"}]",
+  "BROKEN_JSON": "[]",
+  "DEAD_JSON": "[]",
+  "BLANK_JSON": "[]",
+  "AMOUNT": "1299.00",
+  "PAY_PWD": "123456",
+  "ORDER_TITLE": "无线耳机 ×1",
+  "ERR_TEXT": "{CH}拉起失败",
+  "ERR_AGREE": "请先阅读并同意《支付协议》",
+  "ERR_PWD": "支付密码错误，请重新输入",
+  "ALL_BROKEN": "false",
+  "TWICE_POPUP": "false",
+  "ALL_BROKEN_TEXT": "暂无可用的支付方式",
+  "APP_NAME": "支付-安全键盘支付宝",
+  "SUCCESS_TEXT": "支付成功，感谢您的购买",
+  "TASK_ID": "pay-secure-alipay",
+  "POPUP_AMOUNT": "1299.00",
+  "MISMATCH": "false",
+  "CANCEL_ALERT_TEXT": "已取消本次支付",
+  "PAY_TIMEOUT_SEC": "0",
+  "PAY_TIMEOUT_TEXT": "支付超时，订单已关闭",
+  "REFUND_ENABLED": "false",
+  "REFUND_TEXT": "退款申请已提交",
+  "POPUP_MARGIN": "60",
+  "AGREE_TRAP": "false",
+  "SECURE_KEYPAD": "true"
+ },
+ "task": {
+  "id": "pay-secure-alipay",
+  "app_bundle": "com.bench.securealipay",
+  "ability": "EntryAbility",
+  "tier": "P-NORMAL",
+  "category": "PAY.NORMAL(alipay+安全键盘)",
+  "instruction": "勾选协议后选择支付宝，使用页面上的自定义数字键盘输入支付密码 123456（键盘数字为乱序布局，请按屏幕实际位置逐位点击），确认支付直至支付成功页。",
+  "creds": {
+   "pay_pwd": "123456"
+  },
+  "preconditions": [],
+  "goal": {
+   "success": {
+    "all": [
+     {
+      "type": "text_contains",
+      "value": "支付成功"
+     },
+     {
+      "type": "id_contains",
+      "value": "welcome_marker"
+     }
+    ]
+   },
+   "forbid": [],
+   "milestones": [
+    {
+     "id": "keypad_used",
+     "pred": {
+      "type": "id_contains",
+      "value": "pay_keypad"
+     }
+    }
+   ]
+  }
+ }
+}

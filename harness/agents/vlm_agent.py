@@ -90,20 +90,23 @@ class OpenAIClient:
         )
         started = time.time()
         last_err = None
-        for attempt in range(3):  # 网关抖动/超时：重试 2 次，退避 2s/4s
+        for attempt in range(5):  # 429/5xx 指数退避（5/10/20/40s）+ 网络抖动重试
             try:
                 with urllib.request.urlopen(req, timeout=self.timeout_s) as resp:
                     body = json.loads(resp.read().decode("utf-8"))
                 break
             except urllib.error.HTTPError as e:
                 detail = e.read().decode("utf-8", "replace")[:400]
+                if e.code in (429, 500, 502, 503, 504) and attempt < 4:
+                    time.sleep(5 * (2 ** attempt))
+                    continue
                 raise RuntimeError(f"模型网关 HTTP {e.code}: {detail}") from e
             except (urllib.error.URLError, TimeoutError, OSError) as e:
                 last_err = e
-                if attempt < 2:
+                if attempt < 4:
                     time.sleep(2 * (attempt + 1))
         else:
-            raise RuntimeError(f"模型网关网络错误（重试 3 次后放弃）: {last_err}")
+            raise RuntimeError(f"模型网关网络错误（重试 5 次后放弃）: {last_err}")
         content = ""
         try:
             content = body["choices"][0]["message"]["content"] or ""

@@ -245,7 +245,17 @@ def run_task(task_path: Path, app_dir: Path | None, agent_kind: str, cfg: dict, 
             if haps:
                 hap = str(haps[-1])
                 print(f"[{tid}] install {hap}")
+                try:
+                    device.uninstall(task["app_bundle"])  # v3 防陈旧态：装前先卸载
+                except Exception:
+                    pass
                 device.install(hap)
+    # v3 防陈旧屏：先回桌面清掉上一任务的残留画面
+    try:
+        device.key("home")
+    except Exception:
+        pass
+    time.sleep(0.8)
     device.force_stop(task["app_bundle"])
     time.sleep(0.5)
     if backend == "hdc" and hasattr(device, "ensure_foreground"):
@@ -267,6 +277,29 @@ def run_task(task_path: Path, app_dir: Path | None, agent_kind: str, cfg: dict, 
               "app_bundle": task["app_bundle"], "agent": agent_kind, "started_at": datetime.now().isoformat(),
               "success": False, "fail_reason": None, "steps": 0, "time_s": 0.0,
               "tokens": {"prompt_tokens": 0, "completion_tokens": 0, "calls": 0}}
+    # v3 防陈旧屏：首拍必须看到本任务 TASK_ID 且 goal 未被满足（一步未走就"成功"= 陈旧屏）。
+    # 同任务重跑时，上一轮的成功页会同时带 TASK_ID 与 goal 文案，仅查 id 会漏过。
+    ready = False
+    for _try in range(3):
+        try:
+            _t = device.dump_tree(bundle=task["app_bundle"])
+            _nodes = _t.get("nodes", [])
+            if (task["id"] in device.text_snapshot(_t, limit=cfg["agent"]["tree_max_nodes"])
+                    and not judge.verdict(_nodes, screenshot=None).success):
+                ready = True
+                break
+        except Exception:
+            pass
+        try:
+            device.force_stop(task["app_bundle"])
+            time.sleep(0.5)
+            device.ensure_foreground(task["app_bundle"], task.get("ability", "EntryAbility"), settle_s=5.0)
+        except Exception:
+            pass
+    if not ready:
+        max_steps = 0
+        result["fail_reason"] = "device_error: 启动态校验失败（goal 已满足或任务标识缺失，疑似陈旧屏）"
+        print(f"[{tid}] FAIL: 启动态校验失败（疑似陈旧屏/启动失败）")
     model_err_count = 0
     last_sig = None
     stall_count = 0
@@ -405,7 +438,13 @@ def run_task(task_path: Path, app_dir: Path | None, agent_kind: str, cfg: dict, 
                 result["success"] = True
                 break
             if done_claim:
-                device.wait(2.0)  # done 声明但未达标：等页面渲染再判下一轮
+                if not v.success:
+                    # v5：done 是终止声明。终态 goal 未满足 = 任务失败（Pass@1 语义），
+                    # 不再循环等待——否则 agent 反复 done 烧完步数预算。
+                    result["fail_reason"] = "agent_done_goal_unmet"
+                    print(f"[{tid}] done 声明但终态 goal 未满足 -> FAIL")
+                    break
+                device.wait(2.0)
 
     result["time_s"] = round(time.time() - t0, 1)
     if not result["success"] and result["fail_reason"] is None:

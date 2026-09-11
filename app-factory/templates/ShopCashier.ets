@@ -1,16 +1,7 @@
-// 支付功能页模板（PaymentPage）v3 —— 支付三期（安全键盘 / 收银台独立页 / 风控点选 / 短信 OTP）
-// 槽位：CHANNELS_JSON / BROKEN_JSON / DEAD_JSON / BLANK_JSON / AMOUNT / POPUP_AMOUNT / PAY_PWD
-//       ERR_TEXT / ERR_AGREE / ERR_PWD / ALL_BROKEN / ALL_BROKEN_TEXT / TWICE_POPUP
-//       MISMATCH / CANCEL_ALERT_TEXT / PAY_TIMEOUT_SEC / PAY_TIMEOUT_TEXT
-//       REFUND_ENABLED / REFUND_TEXT / ORDER_TITLE / APP_NAME / SUCCESS_TEXT / TASK_ID
-//       —— v3 新增（gen_hap 有默认值，老变体无需提供）：
-//       SECURE_KEYPAD / CHECKOUT_PAGE / RISK_CAPTCHA / RISK_SEQ / SMS_OTP / OTP_CODE / RESEND_SEC / OTP_ERROR
-// 语义：[订单页] → 收银台（渠道+协议）→ 品牌弹窗（金额+密码）→ [二次确认] → [人机验证点选] → [短信 OTP] → 成功页。
-// 故障/风控形态：BROKEN / DEAD / BLANK / ALL_BROKEN / TWICE / MISMATCH / PAY_TIMEOUT / REFUND（原有）
-//               + SECURE_KEYPAD 自定义乱序数字键盘（禁 IME，全点选）
-//               + RISK_CAPTCHA=digit3 人机验证：3×3 乱序数字格按序点选（错点重置）
-//               + SMS_OTP 短信验证码页（复用键盘 + 重发倒计时）
-//               + CHECKOUT_PAGE 收银台独立页（订单页在 Index，返回语义 + AppStorage 状态）
+// 收银台模板（ShopCashier）—— 页 4/5（复用支付 v3 机制：渠道/安全键盘/风控点选/短信 OTP）
+// 金额来自 AppStorage.order_total（订单确认页提交时写入）
+// 槽位：CHANNELS_JSON / BROKEN_JSON / PAY_PWD / ERR_TEXT / ERR_AGREE / ERR_PWD
+//       RISK_CAPTCHA / RISK_SEQ / SMS_OTP / OTP_CODE / RESEND_SEC / OTP_ERROR / TASK_ID / APP_NAME / POPUP_MARGIN
 import { router } from '@kit.ArkUI';
 
 interface ChInfo {
@@ -22,21 +13,18 @@ interface ChInfo {
 
 @Entry
 @Component
-struct Index {
+struct Cashier {
   @State agree: boolean = false
   @State chan: string = ''
   @State err: string = ''
   @State pwd: string = ''
   @State otp: string = ''
   @State done: boolean = false
-  @State blank: boolean = false
-  @State cancelAlert: boolean = false
-  @State refund: boolean = false
-  @State left: number = 0
   @State otpLeft: number = 0
   @State riskProgress: number = 0
   @State padDigits: string[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '退格', '0', '清空']
   @State riskCells: string[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
+  @StorageLink('order_total') orderTotal: string = '0.00'
   private timerId: number = -1
   private otpTimerId: number = -1
   private twiceDone: boolean = false
@@ -44,16 +32,7 @@ struct Index {
   private otpDone: boolean = false
   private CHANNELS: ChInfo[] = JSON.parse('{{CHANNELS_JSON}}') as ChInfo[]
   private BROKEN: string[] = JSON.parse('{{BROKEN_JSON}}') as string[]
-  private DEAD: string[] = JSON.parse('{{DEAD_JSON}}') as string[]
-  private BLANK: string[] = JSON.parse('{{BLANK_JSON}}') as string[]
-  private ALL_BROKEN: string = '{{ALL_BROKEN}}'
   private TWICE: string = '{{TWICE_POPUP}}'
-  private MISMATCH: string = '{{MISMATCH}}'
-  private REFUND_ENABLED: string = '{{REFUND_ENABLED}}'
-  private AGREE_TRAP: string = '{{AGREE_TRAP}}'
-  private TIMEOUT_SEC: number = parseInt('{{PAY_TIMEOUT_SEC}}', 10)
-  private SECURE_KEYPAD: string = '{{SECURE_KEYPAD}}'
-  private CHECKOUT_PAGE: string = '{{CHECKOUT_PAGE}}'
   private RISK_CAPTCHA: string = '{{RISK_CAPTCHA}}'
   private RISK_SEQ: string[] = '{{RISK_SEQ}}'.split(',')
   private SMS_OTP: string = '{{SMS_OTP}}'
@@ -67,7 +46,6 @@ struct Index {
       ['1', '2', '3', '4', '5', '6', '7', '8', '9'])
   }
 
-  // 以 TASK_ID 为种子的确定性乱序（同一变体每次构建一致，不同变体不同布局）
   shuffled(seed: string, base: string[]): string[] {
     let h: number = 7
     for (let i = 0; i < seed.length; i++) {
@@ -107,23 +85,6 @@ struct Index {
     return s
   }
 
-  // 视觉门控：文字相同、仅颜色区分正规/假冒入口（假冒入口点击即拦截）
-  tapChannelObj(c: ChInfo): void {
-    if (c.decoy === true) {
-      this.err = '该入口不是正规支付通道，已为你拦截'
-      this.chan = 'fail'
-      return
-    }
-    this.tapChannel(c.key)
-  }
-
-  stopTimer(): void {
-    if (this.timerId !== -1) {
-      clearInterval(this.timerId)
-      this.timerId = -1
-    }
-  }
-
   stopOtpTimer(): void {
     if (this.otpTimerId !== -1) {
       clearInterval(this.otpTimerId)
@@ -136,53 +97,29 @@ struct Index {
     this.otpLeft = this.RESEND_SEC
     this.otpTimerId = setInterval(() => {
       this.otpLeft--
-      if (this.otpLeft <= 0) {
-        this.stopOtpTimer()
-      }
+      if (this.otpLeft <= 0) { this.stopOtpTimer() }
     }, 1000)
   }
 
-  startTimer(): void {
-    this.stopTimer()
-    if (this.TIMEOUT_SEC > 0) {
-      this.left = this.TIMEOUT_SEC
-      this.timerId = setInterval(() => {
-        this.left--
-        if (this.left <= 0) {
-          this.stopTimer()
-          this.chan = 'timeout'
-          this.pwd = ''
-        }
-      }, 1000)
+  tapChannelObj(c: ChInfo): void {
+    if (c.decoy === true) {
+      this.err = '该入口不是正规支付通道，已为你拦截'
+      this.chan = 'fail'
+      return
     }
+    this.tapChannel(c.key)
   }
 
   tapChannel(key: string): void {
     this.err = ''
-    if (this.ALL_BROKEN === 'true') {
-      this.err = '{{ALL_BROKEN_TEXT}}'
-      this.chan = 'none'
-      return
-    }
     if (this.BROKEN.includes(key)) {
       this.err = '{{ERR_TEXT}}'.replace('{CH}', this.label(key))
       this.chan = 'fail'
       return
     }
-    if (this.BLANK.includes(key)) {
-      this.blank = true
-      this.chan = key
-      return
-    }
-    if (this.DEAD.includes(key)) {
-      this.chan = key + ':dead'
-      return
-    }
     this.chan = key
-    this.startTimer()
   }
 
-  // 阶段链：密码 → TWICE → 人机验证 → OTP → 成功（每步通过后重入 pay() 推进）
   pay(): void {
     if (!this.agree) {
       this.err = '{{ERR_AGREE}}'
@@ -207,9 +144,13 @@ struct Index {
       this.startOtpTimer()
       return
     }
-    this.stopTimer()
     this.stopOtpTimer()
     this.done = true
+    AppStorage.setOrCreate('pay_result', 'success')
+    // 真实支付动线：成功页短暂展示后自动进入订单结果页（不依赖 agent 手动最后一跳）
+    setTimeout(() => {
+      router.pushUrl({ url: 'pages/Result' })
+    }, 1500)
   }
 
   padTap(d: string, target: string): void {
@@ -262,18 +203,11 @@ struct Index {
   }
 
   cancelPay(): void {
-    this.stopTimer()
     this.stopOtpTimer()
     this.twiceDone = false
     this.riskDone = false
     this.otpDone = false
     this.riskProgress = 0
-    if (this.MISMATCH === 'true') {
-      this.chan = ''
-      this.pwd = ''
-      this.cancelAlert = true
-      return
-    }
     this.chan = ''
     this.pwd = ''
     this.otp = ''
@@ -281,29 +215,14 @@ struct Index {
   }
 
   onBackPress(): boolean {
-    if (this.chan !== '' || this.blank) {
-      this.stopTimer()
-      this.stopOtpTimer()
-      this.chan = ''
-      this.blank = false
-      this.pwd = ''
-      this.otp = ''
-      this.twiceDone = false
-      this.riskDone = false
-      this.otpDone = false
-      this.riskProgress = 0
-      return true
-    }
-    if (this.CHECKOUT_PAGE === 'true') {
-      // 收银台独立页：系统返回 = 回到订单页（收银台状态不保留，属正常收银台语义）
-      router.back()
+    if (this.chan !== '') {
+      this.cancelPay()
       return true
     }
     return false
   }
 
   aboutToDisappear(): void {
-    this.stopTimer()
     this.stopOtpTimer()
   }
 
@@ -351,72 +270,41 @@ struct Index {
 
   build() {
     Column() {
-      if (this.refund) {
+      Row({ space: 10 }) {
+        Text('←').fontSize(20).width(36).height(36).textAlign(TextAlign.Center)
+          .onClick(() => { router.back() })
+        Text('收银台').fontSize(17).fontWeight(FontWeight.Bold).id('cashier_marker')
+      }.width('92%').margin({ top: 8 })
+
+      if (this.done) {
         Column({ space: 12 }) {
-          Text('{{REFUND_TEXT}}').fontSize(16).id('refund_marker')
-          Text('{{TASK_ID}}').fontSize(11).fontColor('#BBBBBB')
-        }.width('100%').height('100%').justifyContent(FlexAlign.Center)
-      } else if (this.done) {
-        Column({ space: 12 }) {
-          Text('{{APP_NAME}}').fontSize(18).fontWeight(FontWeight.Bold)
-          Text('{{SUCCESS_TEXT}}').fontSize(16).id('welcome_marker')
-          if (this.REFUND_ENABLED === 'true') {
-            Button('申请退款').height(44).backgroundColor('#FFF3E0').fontColor('#E65100')
-              .onClick(() => { this.refund = true })
-          }
-          if (this.CHECKOUT_PAGE === 'true') {
-            Button('返回订单').height(44).backgroundColor('#E8F1FF').fontColor('#1F5FD0')
-              .onClick(() => {
-                AppStorage.setOrCreate('pay_result', 'success')
-                router.back()
-              })
-          }
-          Text('{{TASK_ID}}').fontSize(11).fontColor('#BBBBBB')
-        }.width('100%').height('100%').justifyContent(FlexAlign.Center)
-      } else if (this.cancelAlert) {
-        Column({ space: 12 }) {
-          Text('{{CANCEL_ALERT_TEXT}}').fontSize(15).fontColor('#FF3B30')
-            .id('cancel_alert_marker')
-          Button('我知道了').height(44)
-            .onClick(() => { this.cancelAlert = false })
-        }.width('86%').padding(16).margin({ top: 260 })
-      } else if (this.chan === 'timeout') {
-        Column({ space: 12 }) {
-          Text('{{PAY_TIMEOUT_TEXT}}').fontSize(16).fontColor('#FF3B30')
-            .id('timeout_marker')
-          Text('{{TASK_ID}}').fontSize(11).fontColor('#BBBBBB')
-        }.width('86%').padding(16).margin({ top: 260 })
+          Text('✅').fontSize(46)
+          Text('{{APP_NAME}}').fontSize(17).fontWeight(FontWeight.Bold)
+          Text('支付成功').fontSize(16).id('welcome_marker')
+          Text('订单编号：{{TASK_ID}}').fontSize(12).fontColor('#999999')
+          Button('查看订单结果').width('80%').height(46)
+            .id('to_result')
+            .onClick(() => { router.pushUrl({ url: 'pages/Result' }) })
+          Button('返回首页').width('80%').height(44).backgroundColor('#F5F5F5').fontColor('#333333')
+            .onClick(() => {
+              router.clear()
+              router.pushUrl({ url: 'pages/Index' })
+            })
+        }.width('100%').layoutWeight(1).justifyContent(FlexAlign.Center)
       } else if (this.chan === 'fail') {
         Column({ space: 12 }) {
           Text(this.err).fontSize(15).fontColor('#FF3B30')
-          Button('更换支付方式').height(44)
+          Button('更换支付方式').height(44).id('retry_channel')
             .onClick(() => { this.chan = ''; this.err = '' })
         }.width('86%').padding(16).margin({ top: 200 })
-      } else if (this.chan === 'none') {
-        Column({ space: 12 }) {
-          Text('{{ALL_BROKEN_TEXT}}').fontSize(16).fontColor('#FF3B30')
-          Text('{{TASK_ID}}').fontSize(11).fontColor('#BBBBBB')
-        }.width('86%').padding(16).margin({ top: 260 })
-      } else if (this.chan.indexOf(':dead') >= 0) {
-        Column({ space: 12 }) {
-          Text(this.label(this.chan.split(':')[0])).fontSize(18).fontWeight(FontWeight.Bold)
-          Text('¥ {{POPUP_AMOUNT}}').fontSize(16)
-          Text('（弹窗内容异常，无确认按钮）').fontSize(12).fontColor('#999999')
-        }.width('70%').padding(24).backgroundColor('#FFFFFF').borderRadius(12).margin({ top: 300 })
-      } else if (this.blank) {
-        Column({ space: 8 }) {
-          Text('').fontSize(14)
-        }.width('100%').height('60%').justifyContent(FlexAlign.Center)
       } else if (this.chan.indexOf(':otp') >= 0) {
-        // 短信验证码页（复用安全键盘 + 重发倒计时）
         Column({ space: 12 }) {
           Text('短信验证码').fontSize(18).fontWeight(FontWeight.Bold).id('otp_marker')
           Text('验证码已发送至本机，请输入 6 位验证码').fontSize(13).fontColor('#666666')
           Text(this.maskOf(this.otp)).fontSize(24).letterSpacing(8).id('otp_mask')
           if (this.err !== '') { Text(this.err).fontSize(13).fontColor('#FF3B30') }
           this.numPad('otp')
-          Button('确认支付').width('100%').height(46)
-            .onClick(() => { this.submitOtp() })
+          Button('确认支付').width('100%').height(46).onClick(() => { this.submitOtp() })
           Button(this.otpLeft > 0 ? `重新发送(${this.otpLeft}s)` : '重新发送验证码')
             .height(40).backgroundColor('#F5F5F5').fontColor(this.otpLeft > 0 ? '#AAAAAA' : '#1F5FD0')
             .id('otp_resend')
@@ -425,7 +313,6 @@ struct Index {
             .onClick(() => { this.cancelPay() })
         }.width('84%').padding(16).backgroundColor('#FFFFFF').borderRadius(12).margin({ top: 60 })
       } else if (this.chan.indexOf(':risk') >= 0) {
-        // 人机验证：3×3 乱序数字按序点选
         Column({ space: 12 }) {
           Text('人机验证').fontSize(18).fontWeight(FontWeight.Bold).id('risk_title')
           Text('请依次点击：' + this.RISK_SEQ.join('  ')).fontSize(15).fontColor('#1F5FD0')
@@ -441,60 +328,41 @@ struct Index {
       } else if (this.chan.indexOf(':twice') >= 0) {
         Column({ space: 14 }) {
           Text('再次确认支付').fontSize(18).fontWeight(FontWeight.Bold)
-          Text('订单金额：¥ {{POPUP_AMOUNT}}').fontSize(16)
-          if (this.TIMEOUT_SEC > 0) {
-            Text('剩余支付时间：' + this.left + 's').fontSize(13).fontColor('#FF9500')
-          }
+          Text('支付金额：¥' + this.orderTotal).fontSize(16)
           Button('确认支付').width('100%').height(46)
             .onClick(() => { this.twiceDone = true; this.pay() })
           Button('返回修改').height(40).backgroundColor('#F5F5F5').fontColor('#333333')
             .onClick(() => { this.chan = this.chan.split(':')[0]; this.pwd = '' })
         }.width('80%').padding(20).backgroundColor('#FFFFFF').borderRadius(12).margin({ top: {{POPUP_MARGIN}} })
       } else if (this.chan !== '') {
-        // 渠道弹窗（拉起成功锚点）：密码 = TextInput（旧）或自定义安全键盘（v3）
         Column({ space: 14 }) {
           Text(this.label(this.chan)).fontSize(20).fontWeight(FontWeight.Bold)
             .id('pay_popup_' + this.chan)
-          Text('订单金额：¥ {{POPUP_AMOUNT}}').fontSize(16)
-          if (this.TIMEOUT_SEC > 0) {
-            Text('剩余支付时间：' + this.left + 's').fontSize(13).fontColor('#FF9500')
-          }
+          Text('支付金额：¥' + this.orderTotal).fontSize(16).id('cashier_amount')
           Row({ space: 6 }) {
             Checkbox().select(this.agree).onChange((v: boolean) => { this.agree = v })
             Text((this.agree ? '✓ ' : '〇 ') + '我已阅读并同意《支付协议》').fontSize(12)
           }.width('100%')
           .onClick(() => { this.agree = true })
-          if (this.SECURE_KEYPAD === 'true') {
-            Text(this.maskOf(this.pwd)).fontSize(24).letterSpacing(8).id('pwd_mask')
-            if (this.err !== '') { Text(this.err).fontSize(13).fontColor('#FF3B30') }
-            this.numPad('pwd')
-          } else {
-            TextInput({ placeholder: '请输入支付密码' })
-              .maxLength(6)
-              .type(InputType.Password)
-              .onChange((v: string) => { this.pwd = v })
-            if (this.err !== '') { Text(this.err).fontSize(13).fontColor('#FF3B30') }
-          }
-          Button('确认支付').width('100%').height(46)
-            .onClick(() => { this.pay() })
+          if (this.err !== '') { Text(this.err).fontSize(13).fontColor('#FF3B30') }
+          Text(this.maskOf(this.pwd)).fontSize(24).letterSpacing(8).id('pwd_mask')
+          if (this.err !== '') { Text(this.err).fontSize(13).fontColor('#FF3B30') }
+          this.numPad('pwd')
+          Button('确认支付').width('100%').height(46).onClick(() => { this.pay() })
           Button('取消').height(40).backgroundColor('#F5F5F5').fontColor('#333333')
             .onClick(() => { this.cancelPay() })
         }.width('80%').padding(20).backgroundColor('#FFFFFF').borderRadius(12).margin({ top: {{POPUP_MARGIN}} })
       } else {
         // 收银台主页
         Column({ space: 14 }) {
-          Text('订单支付').fontSize(22).fontWeight(FontWeight.Bold).id('cashier_marker')
-          Text('商品：{{ORDER_TITLE}}').fontSize(14)
-          Text('应付金额：¥ {{AMOUNT}}').fontSize(16).fontWeight(FontWeight.Bold)
+          Text('应付金额').fontSize(14).fontColor('#666666')
+          Text('¥' + this.orderTotal).fontSize(30).fontColor('#E4393C').fontWeight(FontWeight.Bold)
+            .id('cashier_total')
           Row({ space: 6 }) {
             Checkbox().select(this.agree).onChange((v: boolean) => { this.agree = v })
             Text((this.agree ? '✓ ' : '〇 ') + '我已阅读并同意《支付协议》').fontSize(12)
           }.width('100%')
-          .onClick(() => {
-            // 默认：整行可点（真机实测——若只有小方块可点，视觉模型会反复点文字标签而卡死）
-            // AGREE_TRAP='true' 时还原该缺陷，作为 B11 精准点击陷阱
-            if (this.AGREE_TRAP !== 'true') { this.agree = true }
-          })
+          .onClick(() => { this.agree = true })
           Text('选择支付方式').fontSize(14).fontColor('#666666')
           ForEach(this.CHANNELS, (c: ChInfo) => {
             Button(c.label).width('100%').height(52)
@@ -508,6 +376,6 @@ struct Index {
         }.width('86%').padding(16)
       }
     }
-    .width('100%').height('100%')
+    .width('100%').height('100%').backgroundColor('#F5F6F8')
   }
 }

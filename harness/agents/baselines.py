@@ -25,6 +25,11 @@ class RuleAgent:
         self.cancel_done = False
         self.ime_backs = 0
         self.social_cancel_done = False
+        # v3 安全键盘 / 风控点选 / OTP 渐进指针
+        self.kp_i = 0
+        self.risk_i = 0
+        self.otp_i = 0
+        self.sku_i = 0
 
     def _find(self, nodes, substr):
         for n in nodes:
@@ -123,6 +128,95 @@ class RuleAgent:
         # 弹窗是否开着：不能依赖占位符（真机输入后占位符被掩码内容取代）
         popup_open = (("订单金额" in joined) or ("pay_popup_" in joined)
                       or ("请输入支付密码" in joined) or ("剩余支付时间" in joined))
+        # ---- v3：安全键盘 / 风控点选 / 短信 OTP（全点选，无 TextInput 依赖）----
+        # 渐进指针复位：对应视图不在树中即清零
+        if not self._find_exact(nodes, "清空"):
+            self.kp_i = 0
+        if "人机验证" not in joined:
+            self.risk_i = 0
+        if "短信验证码" not in joined:
+            self.otp_i = 0
+        # 订单页：进入收银台
+        n = self._find_exact(nodes, "去支付")
+        if n and n.get("clickable") and ("支付" in instruction):
+            return self._click(n, "进入收银台")
+        # ---- v4 购物动线（ShopIndex/Detail/Checkout）----
+        # SKU 规格选择：按 creds.sku 顺序逐组点选
+        if "请先选择全部规格" in joined:
+            sku_list = [c for c in str(creds.get("sku", "")).split("|") if c]
+            if self.sku_i < len(sku_list):
+                n = self._find_exact(nodes, sku_list[self.sku_i])
+                if n:
+                    self.sku_i += 1
+                    return self._click(n, f"选规格{self.sku_i}")
+        n = self._find_exact(nodes, "加入购物车")
+        if n and n.get("clickable"):
+            return self._click(n, "加入购物车")
+        n = self._find_exact(nodes, "去结算")
+        if n and n.get("clickable"):
+            return self._click(n, "去结算")
+        # 订单确认页表单：两拍逐项填写（占位符即锚点）
+        if self._has(nodes, "填写收货信息"):
+            a = self._type_field(nodes, "收货人姓名", creds.get("contact", ""), "contact")
+            if a:
+                return a
+            a = self._type_field(nodes, "手机号（11 位）", creds.get("phone", ""), "phone")
+            if a:
+                return a
+            a = self._type_field(nodes, "详细地址（省市区 + 街道门牌）", creds.get("address", ""), "addr")
+            if a:
+                return a
+            if creds.get("invoice_title"):
+                a = self._type_field(nodes, "发票抬头", creds.get("invoice_title", ""), "invtitle")
+                if a:
+                    return a
+        n = self._find_exact(nodes, "提交订单")
+        if n and n.get("clickable"):
+            return self._click(n, "提交订单")
+        n = self._find_exact(nodes, "查看订单结果")
+        if n and n.get("clickable"):
+            return self._click(n, "查看订单结果")
+        # 优惠券弹层：陷阱任务直接不使用；否则按 creds.coupon_id 点第一行选用（券序已按可用性排布）
+        if self._has(nodes, "选择优惠券"):
+            if ("不使用" in instruction) or ("没有可用" in instruction) or ("不满足" in instruction):
+                n = self._find_exact(nodes, "不使用优惠券")
+                if n and n.get("clickable"):
+                    return self._click(n, "不使用优惠券")
+            elif creds.get("coupon_id"):
+                n = self._find_exact(nodes, "选用")
+                if n and n.get("clickable"):
+                    return self._click(n, "选用优惠券")
+        # 商品卡：非详情页时按 creds.product_name 点卡片（文本中心落在卡片热区内）
+        pn = str(creds.get("product_name", ""))
+        if pn and ("加入购物车" not in joined):
+            n = self._find_exact(nodes, pn)
+            if n:
+                return self._click(n, f"打开商品[{pn}]")
+        # 风控点选：3×3 乱序数字按 creds.risk_seq 顺序点击（错点设备端自会重置）
+        if "人机验证" in joined and "人机验证通过" not in joined:
+            seq = [c for c in str(creds.get("risk_seq", "")) if c != ","]
+            if self.risk_i < len(seq):
+                n = self._find_exact(nodes, seq[self.risk_i])
+                if n and n.get("clickable"):
+                    self.risk_i += 1
+                    return self._click(n, f"风控点选第{self.risk_i}位")
+        # OTP：复用键盘逐位输入 creds.sms_otp
+        if "短信验证码" in joined:
+            code = str(creds.get("sms_otp", ""))
+            if self.otp_i < len(code):
+                n = self._find_exact(nodes, code[self.otp_i])
+                if n and n.get("clickable"):
+                    self.otp_i += 1
+                    return self._click(n, f"OTP第{self.otp_i}位")
+        # 安全键盘：逐位点击 creds.pay_pwd（清空按钮存在即键盘在屏）
+        if (creds.get("pay_pwd") and self._find_exact(nodes, "清空")
+                and "短信验证码" not in joined):
+            pwd = str(creds["pay_pwd"])
+            if self.kp_i < len(pwd):
+                n = self._find_exact(nodes, pwd[self.kp_i])
+                if n and n.get("clickable"):
+                    self.kp_i += 1
+                    return self._click(n, f"键盘输入第{self.kp_i}位")
         if popup_open and "超时" in instruction and "等待" in instruction:
             return {"action": "wait", "seconds": 3.0, "reason": "放任支付超时以验证超时逻辑"}
         if popup_open and "取消" in instruction and not self.cancel_done:
@@ -147,8 +241,11 @@ class RuleAgent:
             self.ime_backs += 1
             return {"action": "key", "key": "back",
                     "reason": f"确认支付不在树中，收起软键盘({self.ime_backs}/3)"}
+        pwd_ready = (self.field_steps.get("paypwd", 0) >= 2
+                     or self.kp_i >= len(str(creds.get("pay_pwd", "") or "x")))
+        otp_ready = self.otp_i >= len(str(creds.get("sms_otp", "") or "x"))
         n = self._find_exact(nodes, "确认支付")
-        if n and self.last_pick and self.field_steps.get("paypwd", 0) >= 2 and n.get("clickable"):
+        if n and self.last_pick and pwd_ready and otp_ready and n.get("clickable"):
             return self._click(n, "确认支付")
 
         # 2.6) 六类新登录方式专规（Top100 App 扩展）

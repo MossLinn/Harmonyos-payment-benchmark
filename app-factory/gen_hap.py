@@ -40,6 +40,9 @@ import { window } from '@kit.ArkUI';
 export default class EntryAbility extends UIAbility {
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     hilog.info(0x0000, 'bench', 'EntryAbility onCreate');
+    // 注入地址：want参数 --ps bench_addr（系统参数通道已移除：BasicServicesKit.systemParameter 跨SDK不稳定）
+    const injected: string = (want.parameters?.['bench_addr'] as string) ?? '';
+    AppStorage.setOrCreate('bench_addr', injected);
   }
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
@@ -59,8 +62,13 @@ export default class EntryAbility extends UIAbility {
 """
 
 # {(relative path): content, ...}；占位符 {bundle} {app_name}
-def scaffold(bundle: str, app_name: str, page_ets: str, app_icon_png: bytes) -> dict:
-    return {
+def scaffold(bundle: str, app_name: str, page_ets: str, app_icon_png: bytes,
+             extra_pages: dict | None = None) -> dict:
+    # extra_pages: {页面名(如 "pages/Checkout"): ets 内容}；文件落点 entry/src/main/ets/<页面名>.ets
+    extra = extra_pages or {}
+    pages_src = ["pages/Index"] + sorted(extra.keys())
+    pages_json = '{\n  "src": [' + ", ".join(f'"{p}"' for p in pages_src) + ']\n}\n'
+    files = {
         "build-profile.json5": (
             "{\n"
             "  \"app\": {\n"
@@ -192,10 +200,27 @@ def scaffold(bundle: str, app_name: str, page_ets: str, app_icon_png: bytes) -> 
             '      "value": "#FFFFFF"\n    }\n  ]\n}\n'
         ),
         "entry/src/main/resources/base/media/app_icon.png": app_icon_png,
-        "entry/src/main/resources/base/profile/main_pages.json": '{\n  "src": ["pages/Index"]\n}\n',
+        "entry/src/main/resources/base/profile/main_pages.json": pages_json,
         "entry/src/main/ets/entryability/EntryAbility.ets": ENTRY_ABILITY_ETS,
         "entry/src/main/ets/pages/Index.ets": page_ets,
     }
+    for page_name, content in extra.items():
+        files[f"entry/src/main/ets/{page_name}.ets"] = content
+    return files
+
+
+# v3 新槽位默认值：老变体不提供这些槽位也能渲染（行为与 v2 完全一致）
+DEFAULT_SLOTS = {
+    "SECURE_KEYPAD": "false",
+    "CHECKOUT_PAGE": "false",
+    "RISK_CAPTCHA": "none",
+    "RISK_SEQ": "",
+    "SMS_OTP": "false",
+    "OTP_CODE": "",
+    "RESEND_SEC": "30",
+    "OTP_ERROR": "验证码错误，请重新输入",
+    "SKU_JSON": "[]",
+}
 
 
 def _escape_ets(value: str) -> str:
@@ -288,9 +313,24 @@ def main() -> None:
         shutil.rmtree(project_dir)
     project_dir.mkdir(parents=True)
 
-    slots = dict(variant.get("slots", {}))
+    slots = {**DEFAULT_SLOTS, **variant.get("slots", {})}
     page_ets = render_template(template_path, slots)
-    files = scaffold(variant["bundle"], variant["app_name"], page_ets, base64.b64decode(APP_ICON_B64))
+    extra_pages: dict = {}
+    template2_name = variant.get("template2")
+    if template2_name:
+        template2_path = HERE / "templates" / template2_name
+        if not template2_path.exists():
+            raise SystemExit(f"模板不存在: {template2_path}")
+        # 第二页固定落在 pages/Checkout（收银台）；Index 交由主模板（如 OrderPage）
+        extra_pages["pages/Checkout"] = render_template(template2_path, slots)
+    # v4：任意多页（购物应用等）。variant["extra_templates"] = [{"url": "pages/Detail", "template": "X.ets"}, ...]
+    for et in variant.get("extra_templates", []):
+        tp = HERE / "templates" / et["template"]
+        if not tp.exists():
+            raise SystemExit(f"模板不存在: {tp}")
+        extra_pages[et["url"]] = render_template(tp, slots)
+    files = scaffold(variant["bundle"], variant["app_name"], page_ets,
+                     base64.b64decode(APP_ICON_B64), extra_pages=extra_pages)
     for rel, content in files.items():
         p = project_dir / rel
         p.parent.mkdir(parents=True, exist_ok=True)

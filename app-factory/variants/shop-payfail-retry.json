@@ -1,0 +1,96 @@
+{
+ "app_name": "甄选商城-支付失败换渠道",
+ "bundle": "com.bench.shoppayfailretry",
+ "template": "ShopIndex.ets",
+ "tier": "P-DIAG",
+ "extra_templates": [
+  {
+   "url": "pages/Detail",
+   "template": "ShopDetail.ets"
+  },
+  {
+   "url": "pages/Checkout",
+   "template": "ShopCheckout.ets"
+  },
+  {
+   "url": "pages/Cashier",
+   "template": "ShopCashier.ets"
+  },
+  {
+   "url": "pages/Result",
+   "template": "ShopResult.ets"
+  }
+ ],
+ "slots": {
+  "PRODUCTS_JSON": "[{\"id\": \"p1\", \"name\": \"无线降噪耳机 Pro\", \"price\": 1299, \"sold\": \"2.3万\", \"tag\": \"限时直降\", \"color\": \"#3D5AFE\", \"emoji\": \"🎧\"}, {\"id\": \"p2\", \"name\": \"智能运动手表 S\", \"price\": 899, \"sold\": \"8900\", \"tag\": \"\", \"color\": \"#00B8A9\", \"emoji\": \"⌚\"}, {\"id\": \"p3\", \"name\": \"便携蓝牙音箱\", \"price\": 299, \"sold\": \"5.6万\", \"tag\": \"热卖\", \"color\": \"#FF7043\", \"emoji\": \"🔊\"}, {\"id\": \"p4\", \"name\": \"机械键盘 87键\", \"price\": 499, \"sold\": \"1.2万\", \"tag\": \"新品\", \"color\": \"#5E35B1\", \"emoji\": \"⌨️\"}, {\"id\": \"p5\", \"name\": \"4K 运动相机\", \"price\": 2199, \"sold\": \"3100\", \"tag\": \"\", \"color\": \"#43A047\", \"emoji\": \"📷\"}, {\"id\": \"p6\", \"name\": \"电动咖啡机\", \"price\": 659, \"sold\": \"7700\", \"tag\": \"\", \"color\": \"#6D4C41\", \"emoji\": \"☕\"}]",
+  "COUPONS_JSON": "[{\"id\": \"c100\", \"name\": \"满1000减100券\", \"threshold\": 1000, \"discount\": 100}, {\"id\": \"c30\", \"name\": \"满300减30券\", \"threshold\": 300, \"discount\": 30}, {\"id\": \"c9999\", \"name\": \"满9999减500券\", \"threshold\": 9999, \"discount\": 500}]",
+  "SKU_JSON": "[]",
+  "ADDRESS_TEXT": "上海市浦东新区世纪大道 100 号 环球金融中心 32F 张三 138****0000",
+  "FREIGHT_FREE_LINE": "999",
+  "CHECKOUT_MISMATCH": "false",
+  "CHANNELS_JSON": "[{\"key\": \"wechat\", \"label\": \"微信支付\"}, {\"key\": \"alipay\", \"label\": \"支付宝\"}]",
+  "BROKEN_JSON": "[\"wechat\"]",
+  "PAY_PWD": "123456",
+  "ERR_TEXT": "{CH}拉起失败",
+  "ERR_AGREE": "请先阅读并同意《支付协议》",
+  "ERR_PWD": "支付密码错误，请重新输入",
+  "TWICE_POPUP": "false",
+  "RISK_CAPTCHA": "none",
+  "RISK_SEQ": "",
+  "SMS_OTP": "false",
+  "OTP_CODE": "",
+  "RESEND_SEC": "30",
+  "OTP_ERROR": "验证码错误，请重新输入",
+  "POPUP_MARGIN": "60",
+  "TASK_ID": "shop-payfail-retry",
+  "APP_NAME": "甄选商城-支付失败换渠道",
+  "SECURE_KEYPAD": "true"
+ },
+ "task": {
+  "id": "shop-payfail-retry",
+  "app_bundle": "com.bench.shoppayfailretry",
+  "ability": "EntryAbility",
+  "tier": "P-DIAG",
+  "category": "SHOP.DIAG(C3 渠道故障换路重试)",
+  "instruction": "把「智能运动手表 S」加入购物车并去结算，填写收货信息：收货人 赵六、手机号 13600001111、详细地址 深圳市南山区科技园高新南一道006号；提交订单。收银台先尝试微信支付——微信渠道本次故障拉起失败，请更换支付方式改用支付宝，用数字键盘输入支付密码 123456 完成支付，点击「查看订单结果」，直至订单页显示订单支付成功。",
+  "creds": {
+   "product_name": "智能运动手表",
+   "pay_pwd": "123456",
+   "contact": "张三",
+   "phone": "13800001234",
+   "address": "上海市浦东新区世纪大道100号32F"
+  },
+  "preconditions": [],
+  "goal": {
+   "success": {
+    "all": [
+     {
+      "type": "text_contains",
+      "value": "订单支付成功"
+     },
+     {
+      "type": "id_contains",
+      "value": "order_done_marker"
+     }
+    ]
+   },
+   "forbid": [],
+   "milestones": [
+    {
+     "id": "pay_fail",
+     "pred": {
+      "type": "text_contains",
+      "value": "拉起失败"
+     }
+    },
+    {
+     "id": "form_marker",
+     "pred": {
+      "type": "id_contains",
+      "value": "form_marker"
+     }
+    }
+   ]
+  }
+ }
+}

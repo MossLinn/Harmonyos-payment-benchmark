@@ -1,0 +1,105 @@
+{
+ "app_name": "甄选商城-立即购买直通",
+ "bundle": "com.bench.shopbuynowwechat",
+ "template": "ShopIndex.ets",
+ "tier": "P-NORMAL",
+ "extra_templates": [
+  {
+   "url": "pages/Detail",
+   "template": "ShopDetail.ets"
+  },
+  {
+   "url": "pages/Checkout",
+   "template": "ShopCheckout.ets"
+  },
+  {
+   "url": "pages/Cashier",
+   "template": "ShopCashier.ets"
+  },
+  {
+   "url": "pages/Result",
+   "template": "ShopResult.ets"
+  }
+ ],
+ "slots": {
+  "PRODUCTS_JSON": "[{\"id\": \"p1\", \"name\": \"无线降噪耳机 Pro\", \"price\": 1299, \"sold\": \"2.3万\", \"tag\": \"限时直降\", \"color\": \"#3D5AFE\", \"emoji\": \"🎧\"}, {\"id\": \"p2\", \"name\": \"智能运动手表 S\", \"price\": 899, \"sold\": \"8900\", \"tag\": \"\", \"color\": \"#00B8A9\", \"emoji\": \"⌚\"}, {\"id\": \"p3\", \"name\": \"便携蓝牙音箱\", \"price\": 299, \"sold\": \"5.6万\", \"tag\": \"热卖\", \"color\": \"#FF7043\", \"emoji\": \"🔊\"}, {\"id\": \"p4\", \"name\": \"机械键盘 87键\", \"price\": 499, \"sold\": \"1.2万\", \"tag\": \"新品\", \"color\": \"#5E35B1\", \"emoji\": \"⌨️\"}, {\"id\": \"p5\", \"name\": \"4K 运动相机\", \"price\": 2199, \"sold\": \"3100\", \"tag\": \"\", \"color\": \"#43A047\", \"emoji\": \"📷\"}, {\"id\": \"p6\", \"name\": \"电动咖啡机\", \"price\": 659, \"sold\": \"7700\", \"tag\": \"\", \"color\": \"#6D4C41\", \"emoji\": \"☕\"}]",
+  "COUPONS_JSON": "[{\"id\": \"c100\", \"name\": \"满1000减100券\", \"threshold\": 1000, \"discount\": 100}, {\"id\": \"c30\", \"name\": \"满300减30券\", \"threshold\": 300, \"discount\": 30}, {\"id\": \"c9999\", \"name\": \"满9999减500券\", \"threshold\": 9999, \"discount\": 500}]",
+  "SKU_JSON": "[{\"name\": \"颜色\", \"options\": [{\"label\": \"曜石黑\", \"priceDelta\": 0}, {\"label\": \"冰川白\", \"priceDelta\": 0}]}]",
+  "ADDRESS_TEXT": "上海市浦东新区世纪大道 100 号 环球金融中心 32F 张三 138****0000",
+  "FREIGHT_FREE_LINE": "999",
+  "CHECKOUT_MISMATCH": "false",
+  "CHANNELS_JSON": "[{\"key\": \"wechat\", \"label\": \"微信支付\"}, {\"key\": \"alipay\", \"label\": \"支付宝\"}]",
+  "BROKEN_JSON": "[]",
+  "PAY_PWD": "123456",
+  "ERR_TEXT": "{CH}拉起失败",
+  "ERR_AGREE": "请先阅读并同意《支付协议》",
+  "ERR_PWD": "支付密码错误，请重新输入",
+  "TWICE_POPUP": "false",
+  "RISK_CAPTCHA": "none",
+  "RISK_SEQ": "",
+  "SMS_OTP": "true",
+  "OTP_CODE": "135724",
+  "RESEND_SEC": "30",
+  "OTP_ERROR": "验证码错误，请重新输入",
+  "POPUP_MARGIN": "60",
+  "TASK_ID": "shop-buy-now-wechat",
+  "APP_NAME": "甄选商城-立即购买直通",
+  "SECURE_KEYPAD": "true"
+ },
+ "task": {
+  "id": "shop-buy-now-wechat",
+  "app_bundle": "com.bench.shopbuynowwechat",
+  "ability": "EntryAbility",
+  "tier": "P-NORMAL",
+  "category": "SHOP.NORMAL(规格+直购+OTP)",
+  "instruction": "在首页进入「智能运动手表 S」详情：规格选择【颜色-曜石黑】，直接点击立即购买；订单确认页填写收货人 孙七、手机号 13500002222、详细地址 杭州市西湖区文三路90号；提交订单后收银台选择微信支付，数字键盘输入支付密码 123456，输入短信验证码 135724 并确认，点击「查看订单结果」，直至订单页显示订单支付成功。",
+  "creds": {
+   "product_name": "智能运动手表",
+   "sku": "曜石黑",
+   "pay_pwd": "123456",
+   "sms_otp": "135724",
+   "contact": "孙七",
+   "phone": "13500002222",
+   "address": "杭州市西湖区文三路90号"
+  },
+  "preconditions": [],
+  "goal": {
+   "success": {
+    "all": [
+     {
+      "type": "text_contains",
+      "value": "订单支付成功"
+     },
+     {
+      "type": "id_contains",
+      "value": "order_done_marker"
+     }
+    ]
+   },
+   "forbid": [],
+   "milestones": [
+    {
+     "id": "sku_form",
+     "pred": {
+      "type": "id_contains",
+      "value": "sku_group_"
+     }
+    },
+    {
+     "id": "buy_now",
+     "pred": {
+      "type": "id_contains",
+      "value": "buy_now"
+     }
+    },
+    {
+     "id": "otp_page",
+     "pred": {
+      "type": "text_contains",
+      "value": "短信验证码"
+     }
+    }
+   ]
+  }
+ }
+}
